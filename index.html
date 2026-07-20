@@ -3,11 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전국 시·군 지도 정복 게임 🗺️</title>
-    
-    <!-- 📸 지도판을 이미지 파일(PNG)로 추출해주는 엔진 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
+    <title>지리 정복 게임 포털 🗺️</title>
     <style>
         body {
             font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
@@ -16,683 +12,98 @@
             flex-direction: column;
             align-items: center;
             margin: 0;
-            padding: 15px;
+            padding: 20px;
+            min-height: 100vh;
+            justify-content: center;
         }
         h1 {
             color: #2f3542;
-            margin: 5px 0;
-            font-size: 1.6rem;
+            margin-bottom: 10px;
+            font-size: 2rem;
             text-align: center;
         }
         .subtitle {
             color: #747d8c;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
+            margin-bottom: 30px;
+            font-size: 1rem;
             text-align: center;
         }
-        
-        /* 🕹️ 4대 모드 선택 바 */
-        #mode-selector-bar {
+        .card-container {
             display: flex;
-            gap: 5px;
-            margin-bottom: 15px;
-            background: #e2e8f0;
-            padding: 4px;
-            border-radius: 30px;
+            gap: 20px;
             width: 100%;
-            max-width: 550px;
-        }
-        .mode-btn {
-            flex: 1;
-            border: none;
-            background: none;
-            padding: 8px 0;
-            font-size: 0.82rem;
-            font-weight: bold;
-            color: #57606f;
-            cursor: pointer;
-            border-radius: 25px;
-            transition: all 0.2s;
-        }
-        .mode-btn.active {
-            background: white;
-            color: #2f3542;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        #game-container {
-            width: 100%;
-            max-width: 650px;
-            background: white;
-            padding: 15px;
-            border-radius: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-        }
-        
-        #save-load-bar {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            gap: 10px;
-        }
-        .util-btn {
-            background-color: #747d8c;
-            color: white;
-            border: none;
-            padding: 7px 14px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .util-btn:active { transform: scale(0.97); }
-
-        #info-panel {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-        .badge {
-            font-size: 0.95rem;
-            padding: 6px 14px;
-            border-radius: 20px;
-        }
-        #score-badge { background-color: #ffe0e3; color: #ff4757; }
-        #life-badge { background-color: #fff2cc; color: #d68100; }
-        
-        #random-prompt-box {
-            display: none;
-            width: 100%;
-            background: #f1f2f6;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-            color: #2f3542;
-        }
-
-        #map-container {
-            width: 100%;
-            height: 650px;
-            border: 1px solid #f1f2f6;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #fafafa;
-        }
-
-        .area {
-            fill: #e2e8f0 !important;
-            stroke: #ffffff !important;
-            stroke-width: 0.4px !important;
-            cursor: pointer;
-            transition: fill 0.15s ease, stroke 0.15s ease;
-        }
-        .area.hover-effect {
-            fill: #cbd5e1 !important;
-            stroke: #cbd5e1 !important;
-        }
-        
-        .area.target-highlight {
-            fill: #ff6b81 !important;
-            stroke: #ff4757 !important;
-            stroke-width: 1px !important;
-            animation: pulse 1s infinite alternate;
-        }
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .area.correct { cursor: default; }
-        .area-label {
-            font-size: 9px;
-            font-weight: bold;
-            fill: #1e293b;
-            pointer-events: none;
-            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
-        }
-
-        #game-over-modal {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(47, 53, 66, 0.96);
-            border-radius: 20px;
-            color: white;
-            flex-direction: column;
-            align-items: center;
+            max-width: 700px;
+            flex-wrap: wrap;
             justify-content: center;
-            z-index: 100;
-            padding: 20px;
-            box-sizing: border-box;
         }
-        #game-over-modal h2 { font-size: 2.2rem; color: #ff4757; margin-bottom: 5px; }
-        #final-result-text { font-size: 1.2rem; font-weight: bold; margin-bottom: 25px; }
-        
-        #quiz-choice-modal {
-            display: none;
-            position: absolute;
-            bottom: 30px;
-            width: 90%;
-            max-width: 400px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            flex-direction: column;
-            gap: 8px;
-            z-index: 50;
-        }
-        #quiz-choice-modal h3 {
-            margin: 0 0 5px 0;
-            font-size: 0.95rem;
-            color: #57606f;
-            text-align: center;
-        }
-        .choice-btn {
-            width: 100%;
+        .game-card {
             background: white;
-            border: 1.5px solid #cbd5e1;
-            padding: 10px;
-            border-radius: 8px;
+            border-radius: 20px;
+            padding: 25px;
+            width: 280px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
+        }
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.12);
+            border-color: #3498db;
+        }
+        .card-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .card-title {
+            font-size: 1.3rem;
             font-weight: bold;
             color: #2f3542;
-            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .card-desc {
+            font-size: 0.9rem;
+            color: #747d8c;
             text-align: center;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+        .play-btn {
+            background: #3498db;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-weight: bold;
             font-size: 0.95rem;
-            transition: all 0.15s;
         }
-        .choice-btn:hover { background: #f1f2f6; border-color: #747d8c; }
-
-        .btn {
-            width: 80%; max-width: 280px; color: white; border: none; padding: 14px 0;
-            font-size: 1.05rem; font-weight: bold; border-radius: 30px; cursor: pointer;
-            margin: 6px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-align: center;
-        }
-        .btn:active { transform: scale(0.97); }
-        .btn-blue { background-color: #3498db; }    
-        .btn-green { background-color: #2ed573; }   
-        .btn-gray { background-color: #747d8c; font-size: 0.9rem; padding: 8px 0; width: 50%; } 
     </style>
 </head>
 <body>
 
-    <h1>전국 시·군 지도 정복 게임 🗺️</h1>
-    
-    <div id="mode-selector-bar">
-        <button id="btn-mode-normal" class="mode-btn active" onclick="confirmModeChange('normal')">일반</button>
-        <button id="btn-mode-easy" class="mode-btn" onclick="confirmModeChange('easy')">Easy (선다)</button>
-        <button id="btn-mode-random" class="mode-btn" onclick="confirmModeChange('random')">Random</button>
-        <button id="btn-mode-infinite" class="mode-btn" onclick="confirmModeChange('infinite')">무한 모드 ∞</button>
+    <h1>🗺️ 지도 정복 게임 포털</h1>
+    <div class="subtitle">도전하고 싶은 게임을 선택하세요!</div>
+
+    <div class="card-container">
+        <!-- 🇰🇷 한국 지도 게임 카드 -->
+        <a href="korea.html" class="game-card">
+            <div class="card-icon">🇰🇷</div>
+            <div class="card-title">전국 시·군 정복</div>
+            <div class="card-desc">대한민국 200여 개 시·군 구역을 채워보세요!</div>
+            <div class="play-btn">게임 시작하기</div>
+        </a>
+
+        <!-- 🌍 세계 지도 게임 카드 -->
+        <a href="world.html" class="game-card">
+            <div class="card-icon">🌍</div>
+            <div class="card-title">세계 국기/나라 정복</div>
+            <div class="card-desc">전 세계 주요 국가들의 위치와 이름을 맞춰보세요!</div>
+            <div class="play-btn" style="background: #2ed573;">게임 시작하기</div>
+        </a>
     </div>
 
-    <div id="game-container">
-        <div id="save-load-bar">
-            <button class="util-btn" id="btn-save-code" style="background-color: #34495e;">💾 현재 진행 세이브코드 생성</button>
-            <button class="util-btn" id="btn-load-code" style="background-color: #e67e22;">📂 세이브코드로 이어하기</button>
-        </div>
-
-        <div id="info-panel">
-            <div id="score-badge" class="badge">성공: <span id="score">0</span> / <span id="total-count">0</span></div>
-            <div id="life-badge" class="badge">남은 기회: <span id="life-count">5</span>번</div>
-        </div>
-        
-        <div id="random-prompt-box">
-            🔴 깜빡이는 붉은 영역의 이름을 하단 창에 입력하세요! 
-            <button class="util-btn" onclick="startRandomTurn()" style="padding:2px 8px; margin-left:5px; background:#ff4757;">문제 패스</button>
-        </div>
-
-        <div id="map-container"></div>
-
-        <div id="quiz-choice-modal">
-            <h3 id="quiz-choice-title">선택한 지역의 이름은 무엇일까요?</h3>
-            <button class="choice-btn" onclick="submitChoice(0)"></button>
-            <button class="choice-btn" onclick="submitChoice(1)"></button>
-            <button class="choice-btn" onclick="submitChoice(2)"></button>
-            <button class="choice-btn" onclick="submitChoice(3)"></button>
-        </div>
-
-        <div id="game-over-modal">
-            <h2>GAME OVER 🚫</h2>
-            <div id="final-result-text">기회를 모두 소진했습니다!</div>
-            <button class="btn btn-blue" id="share-url-btn">↗️ 내 기록 친구에게 공유</button>
-            <button class="btn btn-green" id="save-img-btn">💾 내 지도 이미지 저장</button>
-            <button class="btn btn-gray" onclick="location.reload()">다시 도전하기</button>
-        </div>
-    </div>
-
-    <script>
-        const mapContainer = document.getElementById('map-container');
-        const scoreDisplay = document.getElementById('score');
-        const totalCountDisplay = document.getElementById('total-count');
-        const lifeDisplay = document.getElementById('life-count');
-        const modal = document.getElementById('game-over-modal');
-        const choiceModal = document.getElementById('quiz-choice-modal');
-        const randomBox = document.getElementById('random-prompt-box');
-        const shareUrlBtn = document.getElementById('share-url-btn');
-        const saveImgBtn = document.getElementById('save-img-btn');
-        
-        let correctCount = 0;
-        let totalRegions = 0;
-        let lives = 5; 
-        let globalSvg = null;
-        let gameMode = 'normal'; 
-        
-        let currentRandomTarget = null; 
-        let currentEasyActiveCity = null;
-        let currentChoices = [];
-
-        // 🔒 [선택지 고정용 캐시 바구니]
-        const choiceCache = {};
-
-        const customRegionMap = {}; 
-        const adjacencyMap = {}; 
-        const cityIndexList = []; 
-        const colorPalette = ["#4ade80", "#60a5fa", "#f97316", "#a78bfa", "#f472b6", "#fbbf24", "#2dd4bf"];
-
-        const modeCodes = { 'normal': '0', 'easy': '1', 'random': '2', 'infinite': '3' };
-        const codeToMode = { '0': 'normal', '1': 'easy', '2': 'random', '3': 'infinite' };
-
-        fetch('korea.svg')
-            .then(response => {
-                if(!response.ok) throw new Error("korea.svg 로드 실패");
-                return response.text();
-            })
-            .then(svgText => {
-                mapContainer.innerHTML = svgText;
-                globalSvg = mapContainer.querySelector('svg');
-                globalSvg.setAttribute('width', '100%');
-                globalSvg.setAttribute('height', '100%');
-                
-                const paths = globalSvg.querySelectorAll('path, polygon');
-                
-                paths.forEach(path => {
-                    const rawId = path.getAttribute('id') || '';
-                    if (!rawId || rawId.includes('Layer') || rawId.includes('layer')) return;
-
-                    let cityName = rawId.split('_')[0].split('-')[0].split(' ')[0].trim();
-                    let currentElement = path;
-                    let provinceName = "";
-                    
-                    while (currentElement && currentElement !== globalSvg) {
-                        const parent = currentElement.parentElement;
-                        if (parent && parent.tagName === "g") {
-                            const pId = parent.getAttribute('id') || '';
-                            if (pId.includes('서울') || pId.includes('부산') || pId.includes('인천') || 
-                                pId.includes('대구') || pId.includes('광주') || pId.includes('대전') || pId.includes('울산') ||
-                                pId.includes('경기') || pId.includes('강원') || pId.includes('충청') || pId.includes('전라') || pId.includes('경상') || pId.includes('제주')) {
-                                provinceName = pId; break;
-                            }
-                        }
-                        currentElement = parent;
-                    }
-
-                    if (provinceName.includes('서울') || provinceName.includes('부산') || provinceName.includes('인천') || 
-                        provinceName.includes('대구') || provinceName.includes('광주') || provinceName.includes('대전') || 
-                        (provinceName.includes('울산') && cityName !== '울주군') || cityName.endsWith('구')) {
-                        if (provinceName.includes('서울')) cityName = '서울';
-                        else if (provinceName.includes('부산')) cityName = '부산';
-                        else if (provinceName.includes('인천')) cityName = '인천';
-                        else if (provinceName.includes('대구')) cityName = '대구';
-                        else if (provinceName.includes('광주')) cityName = '광주';
-                        else if (provinceName.includes('대전')) cityName = '대전';
-                        else if (provinceName.includes('울산')) cityName = '울산';
-                    }
-
-                    const uniqueKey = `${provinceName}_${cityName}`;
-                    
-                    path.classList.add('area');
-                    path.setAttribute('data-unique-key', uniqueKey);
-                    path.setAttribute('data-display-name', cityName);
-
-                    if (!customRegionMap[uniqueKey]) customRegionMap[uniqueKey] = [];
-                    customRegionMap[uniqueKey].push(path);
-                });
-
-                Object.keys(customRegionMap).sort().forEach(key => cityIndexList.push(key));
-                totalRegions = cityIndexList.length;
-                totalCountDisplay.textContent = totalRegions;
-
-                // [인접 연산]
-                cityIndexList.forEach(c1 => {
-                    adjacencyMap[c1] = new Set();
-                    cityIndexList.forEach(c2 => {
-                        if (c1 === c2) return;
-                        let isAdjacent = false;
-                        for (let p1 of customRegionMap[c1]) {
-                            const b1 = p1.getBBox();
-                            for (let p2 of customRegionMap[c2]) {
-                                const b2 = p2.getBBox();
-                                const m = 1.5;
-                                if (b1.x - m <= b2.x + b2.width && b2.x - m <= b1.x + b1.width &&
-                                    b1.y - m <= b2.y + b2.height && b2.y - m <= b1.y + b1.height) {
-                                    isAdjacent = true; break;
-                                }
-                            }
-                            if (isAdjacent) break;
-                        }
-                        if (isAdjacent) adjacencyMap[c1].add(c2);
-                    });
-                });
-
-                // [클릭 이벤트]
-                cityIndexList.forEach(uniqueKey => {
-                    const childPaths = customRegionMap[uniqueKey];
-                    const displayName = childPaths[0].getAttribute('data-display-name');
-
-                    childPaths.forEach(path => {
-                        path.addEventListener('mouseenter', () => {
-                            if (gameMode === 'random' && currentRandomTarget !== uniqueKey) return;
-                            childPaths.forEach(p => { if (!p.classList.contains('correct')) p.classList.add('hover-effect'); });
-                        });
-                        path.addEventListener('mouseleave', () => {
-                            childPaths.forEach(p => p.classList.remove('hover-effect'));
-                        });
-
-                        path.addEventListener('click', function() {
-                            if (this.classList.contains('correct') || (lives <= 0 && gameMode !== 'infinite')) return;
-                            
-                            if (gameMode === 'normal' || gameMode === 'infinite') {
-                                handleNormalQuiz(uniqueKey, displayName);
-                            } else if (gameMode === 'easy') {
-                                handleEasyQuiz(uniqueKey, displayName);
-                            } else if (gameMode === 'random') {
-                                if (uniqueKey === currentRandomTarget) handleNormalQuiz(uniqueKey, displayName);
-                            }
-                        });
-                    });
-                });
-            });
-
-        function confirmModeChange(targetMode) {
-            if (gameMode === targetMode) return;
-            const userConfirm = confirm("⚠️ 경고: 모드를 변경하면 지금까지 플레이하던 정답 상황이 모두 사라지고 초기화됩니다!\n\n현재 진행 상태를 세이브코드로 저장하셨나요? 변경을 계속 진행할까요?");
-            if (userConfirm) {
-                resetGameState();
-                applyGameMode(targetMode);
-            }
-        }
-
-        function resetGameState() {
-            choiceModal.style.display = 'none';
-            if (currentRandomTarget && customRegionMap[currentRandomTarget]) {
-                customRegionMap[currentRandomTarget].forEach(p => p.classList.remove('target-highlight'));
-            }
-            const labels = globalSvg.querySelectorAll('.area-label');
-            labels.forEach(l => l.remove());
-            
-            cityIndexList.forEach(key => {
-                customRegionMap[key].forEach(p => {
-                    p.classList.remove('correct', 'hover-effect', 'target-highlight');
-                    p.style.removeProperty('fill'); p.style.removeProperty('stroke');
-                });
-            });
-
-            // 캐시 초기화
-            Object.keys(choiceCache).forEach(k => delete choiceCache[k]);
-
-            correctCount = 0;
-            scoreDisplay.textContent = correctCount;
-            lives = 5;
-            lifeDisplay.textContent = lives;
-            currentRandomTarget = null;
-        }
-
-        function applyGameMode(targetMode) {
-            gameMode = targetMode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtnId = `btn-mode-${gameMode}`;
-            if(document.getElementById(activeBtnId)) document.getElementById(activeBtnId).classList.add('active');
-
-            if (gameMode === 'infinite') {
-                lifeDisplay.textContent = "∞";
-                randomBox.style.display = 'none';
-            } else if (gameMode === 'random') {
-                lifeDisplay.textContent = lives;
-                randomBox.style.display = 'block';
-                startRandomTurn();
-            } else {
-                lifeDisplay.textContent = lives;
-                randomBox.style.display = 'none';
-            }
-        }
-
-        function handleNormalQuiz(uniqueKey, displayName) {
-            const userAnswer = prompt(`이 지역(시/군)의 이름은 무엇일까요?`);
-            if (!userAnswer) return;
-            const trimmedUser = userAnswer.trim();
-
-            if (trimmedUser === "정답다내놔") {
-                triggerCheatKey(globalSvg); return;
-            }
-
-            const isCorrect = (trimmedUser === displayName) || 
-                              (trimmedUser + "시" === displayName) || 
-                              (trimmedUser + "군" === displayName) ||
-                              (displayName === trimmedUser + "시") || 
-                              (displayName === trimmedUser + "군");
-
-            if (isCorrect) {
-                alert(`정답입니다! 🎉 [${displayName}]`);
-                processCorrectAnswer(globalSvg, uniqueKey, displayName);
-                if (gameMode === 'random') startRandomTurn();
-            } else {
-                handleWrongAnswer(uniqueKey, displayName);
-            }
-        }
-
-        // 2. 객관식 Easy 모드 (선택지 고정 알고리즘 반영)
-        function handleEasyQuiz(uniqueKey, displayName) {
-            currentEasyActiveCity = uniqueKey;
-            choiceModal.style.display = 'flex';
-            
-            // 🔥 한 번 뽑아둔 선택지가 캐시에 있다면 그대로 사용 (재클릭시 안 바뀜)
-            if (!choiceCache[uniqueKey]) {
-                const wrongCandidates = cityIndexList
-                    .map(key => customRegionMap[key][0].getAttribute('data-display-name'))
-                    .filter(name => name !== displayName);
-                    
-                const selectedWrong = [];
-                while (selectedWrong.length < 3) {
-                    const randName = wrongCandidates[Math.floor(Math.random() * wrongCandidates.length)];
-                    if (!selectedWrong.includes(randName)) selectedWrong.push(randName);
-                }
-
-                choiceCache[uniqueKey] = [displayName, ...selectedWrong].sort(() => Math.random() - 0.5);
-            }
-
-            currentChoices = choiceCache[uniqueKey];
-            const buttons = choiceModal.querySelectorAll('.choice-btn');
-            buttons.forEach((btn, index) => {
-                btn.textContent = `${index + 1}. ${currentChoices[index]}`;
-            });
-        }
-
-        function submitChoice(selectedIndex) {
-            const selectedAnswer = currentChoices[selectedIndex];
-            const activeKey = currentEasyActiveCity;
-            const correctAnswerName = customRegionMap[activeKey][0].getAttribute('data-display-name');
-            
-            choiceModal.style.display = 'none';
-
-            if (selectedAnswer === correctAnswerName) {
-                alert(`정답입니다! 🎉 [${correctAnswerName}]`);
-                processCorrectAnswer(globalSvg, activeKey, correctAnswerName);
-            } else {
-                handleWrongAnswer(activeKey, correctAnswerName);
-            }
-        }
-
-        function handleWrongAnswer(uniqueKey, displayName) {
-            if (gameMode === 'infinite') {
-                alert(`아쉽게도 틀렸습니다!\n(힌트: 첫 글자는 '${displayName.substring(0, 1)}')`);
-                return;
-            }
-            lives--;
-            lifeDisplay.textContent = lives;
-            alert(`틀렸습니다! 남은 기회: ${lives}번\n(힌트: 첫 글자는 '${displayName.substring(0, 1)}')`);
-            if (lives <= 0) triggerGameOver();
-            else if (gameMode === 'random') startRandomTurn();
-        }
-
-        function startRandomTurn() {
-            if (currentRandomTarget && customRegionMap[currentRandomTarget]) {
-                customRegionMap[currentRandomTarget].forEach(p => p.classList.remove('target-highlight'));
-            }
-            const remainingCities = cityIndexList.filter(key => !customRegionMap[key][0].classList.contains('correct'));
-            if (remainingCities.length === 0) {
-                alert("축하합니다! 모든 미션을 완료했습니다!"); return;
-            }
-            currentRandomTarget = remainingCities[Math.floor(Math.random() * remainingCities.length)];
-            customRegionMap[currentRandomTarget].forEach(p => p.classList.add('target-highlight'));
-        }
-
-        function processCorrectAnswer(svgParent, uniqueKey, displayName) {
-            const childPaths = customRegionMap[uniqueKey];
-            if (!childPaths || childPaths[0].classList.contains('correct')) return;
-
-            childPaths.forEach(p => p.classList.remove('target-highlight'));
-
-            const forbiddenColors = new Set();
-            adjacencyMap[uniqueKey].forEach(neighbor => {
-                const neighborPaths = customRegionMap[neighbor];
-                if (neighborPaths && neighborPaths[0].classList.contains('correct')) {
-                    forbiddenColors.add(neighborPaths[0].style.getPropertyValue('fill'));
-                }
-            });
-
-            const availableColors = colorPalette.filter(c => !forbiddenColors.has(c));
-            const finalColor = availableColors.length > 0 ? availableColors[Math.floor(Math.random() * availableColors.length)] : colorPalette[Math.floor(Math.random() * colorPalette.length)];
-
-            childPaths.forEach(p => {
-                p.classList.remove('hover-effect'); p.classList.add('correct');
-                p.style.setProperty('fill', finalColor, 'important');
-                p.style.setProperty('stroke', finalColor, 'important');
-            });
-
-            correctCount++;
-            scoreDisplay.textContent = correctCount;
-            const repPath = childPaths[Math.floor(childPaths.length / 2)];
-            drawMiniLabel(svgParent, repPath, displayName);
-        }
-
-        document.getElementById('btn-save-code').addEventListener('click', () => {
-            if (correctCount === 0 && lives === 5 && gameMode === 'normal') {
-                alert("저장할 데이터가 없습니다!"); return;
-            }
-            
-            let binaryString = modeCodes[gameMode] + lives.toString();
-            cityIndexList.forEach(key => {
-                const paths = customRegionMap[key];
-                binaryString += (paths && paths[0].classList.contains('correct')) ? "1" : "0";
-            });
-            
-            try {
-                const hexaSaveCode = btoa(unescape(encodeURIComponent(binaryString)));
-                navigator.clipboard.writeText(hexaSaveCode).then(() => {
-                    alert(`현재 게임 모드와 진행 결과가 세이브코드로 압축되었습니다! 💾\n\n코드가 클립보드에 안전하게 복사되었으니 보관해 두세요.`);
-                });
-            } catch(e) { alert("세이브코드 생성 실패"); }
-        });
-
-        document.getElementById('btn-load-code').addEventListener('click', () => {
-            const inputCode = prompt("보관해 두신 '이어하기 세이브코드'를 입력창에 붙여넣어 주세요.");
-            if (!inputCode) return;
-            
-            try {
-                const decodedString = decodeURIComponent(escape(atob(inputCode.trim())));
-                
-                let targetMode = 'normal';
-                let parsedLives = 5;
-                let dataStartIndex = 0;
-
-                if (decodedString.length === totalRegions + 2) {
-                    targetMode = codeToMode[decodedString.charAt(0)] || 'normal';
-                    parsedLives = parseInt(decodedString.charAt(1));
-                    dataStartIndex = 2;
-                } else if (decodedString.length === totalRegions + 1) {
-                    targetMode = 'normal';
-                    parsedLives = parseInt(decodedString.charAt(0));
-                    dataStartIndex = 1;
-                    alert("ℹ️ 이전 규격의 세이브코드가 확인되어 '일반 모드'로 이어하기를 복구합니다.");
-                } else {
-                    alert("⚠️ 유효하지 않은 세이브코드입니다."); return;
-                }
-
-                resetGameState();
-                applyGameMode(targetMode);
-                lives = parsedLives;
-                if (gameMode !== 'infinite') lifeDisplay.textContent = lives;
-
-                for (let i = 0; i < totalRegions; i++) {
-                    if (decodedString.charAt(dataStartIndex + i) === "1") {
-                        const targetKey = cityIndexList[i];
-                        const nameAttr = customRegionMap[targetKey][0].getAttribute('data-display-name');
-                        processCorrectAnswer(globalSvg, targetKey, nameAttr);
-                    }
-                }
-                
-                if (gameMode === 'random') startRandomTurn();
-                alert(`🎮 세이브코드 로드 성공!\n[${gameMode.toUpperCase()}] 모드 / [${correctCount}개 정복] 시점부터 게임을 재개합니다.`);
-            } catch(error) { alert("⚠️ 세이브코드가 유효하지 않거나 손상되었습니다."); }
-        });
-
-        function triggerGameOver() {
-            choiceModal.style.display = 'none';
-            if (currentRandomTarget) customRegionMap[currentRandomTarget].forEach(p => p.classList.remove('target-highlight'));
-            modal.style.display = 'flex';
-            document.getElementById('final-result-text').textContent = `최종 기록: ${totalRegions}개 중 ${correctCount}개 정복!`;
-        }
-
-        shareUrlBtn.addEventListener('click', () => {
-            const currentUrl = window.location.href;
-            const shareText = `대한민국 지도 정복 게임! 내 기록은 ${correctCount}개야. 너도 전부 채울 수 있어? 🔥`;
-            if (navigator.share) navigator.share({ title: '전국 시·군 지도 정복 게임 🗺️', text: shareText, url: currentUrl });
-            else navigator.clipboard.writeText(`${shareText}\n${currentUrl}`).then(() => alert("주소와 기록이 복사되었습니다! 📋"));
-        });
-
-        saveImgBtn.addEventListener('click', () => {
-            saveImgBtn.textContent = "⚙️ 이미지 파일 변환 중...";
-            saveImgBtn.disabled = true;
-            setTimeout(() => {
-                html2canvas(mapContainer).then(canvas => {
-                    const a = document.createElement('a');
-                    a.href = canvas.toDataURL('image/png');
-                    a.download = `korea_map_score_${correctCount}.png`;
-                    a.click();
-                    saveImgBtn.textContent = "💾 내 지도 이미지 저장";
-                    saveImgBtn.disabled = false;
-                    alert("내가 완성한 지도 이미지가 다운로드 되었습니다! 📂");
-                });
-            }, 100);
-        });
-
-        function triggerCheatKey(svgParent) {
-            Object.keys(customRegionMap).forEach(key => { 
-                const nameAttr = customRegionMap[key][0].getAttribute('data-display-name');
-                processCorrectAnswer(svgParent, key, nameAttr); 
-            });
-            setTimeout(triggerGameOver, 500); 
-        }
-
-        function drawMiniLabel(svgParent, targetElement, text) {
-            const bbox = targetElement.getBBox();
-            const textNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            textNode.setAttribute("x", bbox.x + bbox.width / 2);
-            textNode.setAttribute("y", bbox.y + bbox.height / 2);
-            textNode.setAttribute("class", "area-label");
-            textNode.setAttribute("text-anchor", "middle");
-            textNode.setAttribute("dominant-baseline", "middle");
-            textNode.textContent = text;
-            svgParent.appendChild(textNode);
-        }
-    </script>
 </body>
 </html>
