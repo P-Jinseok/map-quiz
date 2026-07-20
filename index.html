@@ -73,7 +73,6 @@
             position: relative;
         }
         
-        /* 📝 깔끔하게 개편된 세이브/로드 상단 바 */
         #save-load-bar {
             width: 100%;
             display: flex;
@@ -235,7 +234,6 @@
     </div>
 
     <div id="game-container">
-        <!-- 📝 보기 좋은 세이브코드 문구 개편 바 -->
         <div id="save-load-bar">
             <button class="util-btn" id="btn-save-code" style="background-color: #34495e;">💾 현재 진행 세이브코드 생성</button>
             <button class="util-btn" id="btn-load-code" style="background-color: #e67e22;">📂 세이브코드로 이어하기</button>
@@ -291,9 +289,12 @@
         let currentEasyActiveCity = null;
         let currentChoices = [];
 
-        const customRegionMap = {}; // 내부 고유키 (예: "강원_고성군", "경남_고성군") 보관
+        // 🔒 [선택지 고정용 캐시 바구니]
+        const choiceCache = {};
+
+        const customRegionMap = {}; 
         const adjacencyMap = {}; 
-        const cityIndexList = []; // 세이브 코드 정렬 전용 불변 리스트
+        const cityIndexList = []; 
         const colorPalette = ["#4ade80", "#60a5fa", "#f97316", "#a78bfa", "#f472b6", "#fbbf24", "#2dd4bf"];
 
         const modeCodes = { 'normal': '0', 'easy': '1', 'random': '2', 'infinite': '3' };
@@ -320,7 +321,6 @@
                     let currentElement = path;
                     let provinceName = "";
                     
-                    // 소속 상위 도(Province) 역추적
                     while (currentElement && currentElement !== globalSvg) {
                         const parent = currentElement.parentElement;
                         if (parent && parent.tagName === "g") {
@@ -334,7 +334,6 @@
                         currentElement = parent;
                     }
 
-                    // 광역시/특별시 내부 자치구 처리 보정
                     if (provinceName.includes('서울') || provinceName.includes('부산') || provinceName.includes('인천') || 
                         provinceName.includes('대구') || provinceName.includes('광주') || provinceName.includes('대전') || 
                         (provinceName.includes('울산') && cityName !== '울주군') || cityName.endsWith('구')) {
@@ -347,26 +346,21 @@
                         else if (provinceName.includes('울산')) cityName = '울산';
                     }
 
-                    // ✨ [고성군 버그 해결의 핵심]
-                    // 내부 고유 식별키를 "도이름_시군이름" 형태로 고유 조합합니다.
-                    // 유저 정답 사전용 표기(data-display-name)와 실정답값(data-correct-answer)을 정교하게 쪼갭니다.
                     const uniqueKey = `${provinceName}_${cityName}`;
                     
                     path.classList.add('area');
                     path.setAttribute('data-unique-key', uniqueKey);
-                    path.setAttribute('data-display-name', cityName); // 유저 화면 노출 및 입력값 서치용 ("고성군")
+                    path.setAttribute('data-display-name', cityName);
 
                     if (!customRegionMap[uniqueKey]) customRegionMap[uniqueKey] = [];
                     customRegionMap[uniqueKey].push(path);
                 });
 
-                // 알파벳 정렬 기반 인덱싱 목록 재구축 (하위 세이브 호환성 100% 보증)
-                Object.keys(customRegionMap).sort().forEach(key => cityIndexList.push(uniqueKeyMatchingFilter(key)));
-
+                Object.keys(customRegionMap).sort().forEach(key => cityIndexList.push(key));
                 totalRegions = cityIndexList.length;
                 totalCountDisplay.textContent = totalRegions;
 
-                // [정밀 기하학적 인접 연산]
+                // [인접 연산]
                 cityIndexList.forEach(c1 => {
                     adjacencyMap[c1] = new Set();
                     cityIndexList.forEach(c2 => {
@@ -388,7 +382,7 @@
                     });
                 });
 
-                // [클릭 이벤트 리스너 마운트]
+                // [클릭 이벤트]
                 cityIndexList.forEach(uniqueKey => {
                     const childPaths = customRegionMap[uniqueKey];
                     const displayName = childPaths[0].getAttribute('data-display-name');
@@ -417,9 +411,6 @@
                 });
             });
 
-        // 하위 호환 매핑을 위해 내부 구조를 깨지 않는 보정 필터
-        function uniqueKeyMatchingFilter(key) { return key; }
-
         function confirmModeChange(targetMode) {
             if (gameMode === targetMode) return;
             const userConfirm = confirm("⚠️ 경고: 모드를 변경하면 지금까지 플레이하던 정답 상황이 모두 사라지고 초기화됩니다!\n\n현재 진행 상태를 세이브코드로 저장하셨나요? 변경을 계속 진행할까요?");
@@ -443,6 +434,9 @@
                     p.style.removeProperty('fill'); p.style.removeProperty('stroke');
                 });
             });
+
+            // 캐시 초기화
+            Object.keys(choiceCache).forEach(k => delete choiceCache[k]);
 
             correctCount = 0;
             scoreDisplay.textContent = correctCount;
@@ -470,7 +464,6 @@
             }
         }
 
-        // 1. 일반 주관식 처리
         function handleNormalQuiz(uniqueKey, displayName) {
             const userAnswer = prompt(`이 지역(시/군)의 이름은 무엇일까요?`);
             if (!userAnswer) return;
@@ -480,7 +473,6 @@
                 triggerCheatKey(globalSvg); return;
             }
 
-            // 입력 비교는 순수한 지자체 이름("고성", "고성군") 단위로 유연하게 처리
             const isCorrect = (trimmedUser === displayName) || 
                               (trimmedUser + "시" === displayName) || 
                               (trimmedUser + "군" === displayName) ||
@@ -496,23 +488,27 @@
             }
         }
 
-        // 2. 객관식 Easy 모드 보기 가공
+        // 2. 객관식 Easy 모드 (선택지 고정 알고리즘 반영)
         function handleEasyQuiz(uniqueKey, displayName) {
             currentEasyActiveCity = uniqueKey;
             choiceModal.style.display = 'flex';
             
-            // 전국의 디스플레이 명칭 중 중복을 뺀 오답 리스트업
-            const wrongCandidates = cityIndexList
-                .map(key => customRegionMap[key][0].getAttribute('data-display-name'))
-                .filter(name => name !== displayName);
-                
-            const selectedWrong = [];
-            while (selectedWrong.length < 3) {
-                const randName = wrongCandidates[Math.floor(Math.random() * wrongCandidates.length)];
-                if (!selectedWrong.includes(randName)) selectedWrong.push(randName);
+            // 🔥 한 번 뽑아둔 선택지가 캐시에 있다면 그대로 사용 (재클릭시 안 바뀜)
+            if (!choiceCache[uniqueKey]) {
+                const wrongCandidates = cityIndexList
+                    .map(key => customRegionMap[key][0].getAttribute('data-display-name'))
+                    .filter(name => name !== displayName);
+                    
+                const selectedWrong = [];
+                while (selectedWrong.length < 3) {
+                    const randName = wrongCandidates[Math.floor(Math.random() * wrongCandidates.length)];
+                    if (!selectedWrong.includes(randName)) selectedWrong.push(randName);
+                }
+
+                choiceCache[uniqueKey] = [displayName, ...selectedWrong].sort(() => Math.random() - 0.5);
             }
 
-            currentChoices = [displayName, ...selectedWrong].sort(() => Math.random() - 0.5);
+            currentChoices = choiceCache[uniqueKey];
             const buttons = choiceModal.querySelectorAll('.choice-btn');
             buttons.forEach((btn, index) => {
                 btn.textContent = `${index + 1}. ${currentChoices[index]}`;
@@ -587,7 +583,6 @@
             drawMiniLabel(svgParent, repPath, displayName);
         }
 
-        // 🔒 [세이브코드 추출 시스템 - 개편 완료]
         document.getElementById('btn-save-code').addEventListener('click', () => {
             if (correctCount === 0 && lives === 5 && gameMode === 'normal') {
                 alert("저장할 데이터가 없습니다!"); return;
@@ -607,7 +602,6 @@
             } catch(e) { alert("세이브코드 생성 실패"); }
         });
 
-        // 🔓 [세이브코드로 이어하기 시스템 - 개편 완료]
         document.getElementById('btn-load-code').addEventListener('click', () => {
             const inputCode = prompt("보관해 두신 '이어하기 세이브코드'를 입력창에 붙여넣어 주세요.");
             if (!inputCode) return;
