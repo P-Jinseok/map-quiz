@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>세계 지도 정복 게임 🌍</title>
     
-    <!-- 📸 지도판을 이미지 파일(PNG)로 추출해주는 엔진 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
@@ -144,38 +143,7 @@
             border: 1px solid #f1f2f6;
             border-radius: 12px;
             overflow: hidden;
-            background: #a5d5e8;
-        }
-
-        .country {
-            fill: #f1f2f6;
-            stroke: #cbd5e1;
-            stroke-width: 0.5px;
-            cursor: pointer;
-            transition: fill 0.15s ease, stroke 0.15s ease;
-        }
-        .country:hover {
-            fill: #94a3b8 !important;
-        }
-        
-        .country.target-highlight {
-            fill: #ff6b81 !important;
-            stroke: #ff4757 !important;
-            stroke-width: 1px !important;
-            animation: pulse 1s infinite alternate;
-        }
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .country.correct { cursor: default; }
-        .area-label {
-            font-size: 10px;
-            font-weight: bold;
-            fill: #1e293b;
-            pointer-events: none;
-            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+            background: #a5d5e8; /* 바다 색상 */
         }
 
         #game-over-modal {
@@ -243,11 +211,10 @@
 </head>
 <body>
 
-    <!-- 🏠 상단 네비게이션 헤더 -->
     <div class="header-bar">
         <a href="index.html" class="home-btn">🏠 메인 메뉴로</a>
         <h1>세계 지도 정복 🌍</h1>
-        <div style="width: 80px;"></div> <!-- 정렬용 여백 -->
+        <div style="width: 80px;"></div>
     </div>
     
     <div id="mode-selector-bar">
@@ -322,19 +289,12 @@
         const modeCodes = { 'normal': '0', 'easy': '1', 'random': '2', 'infinite': '3' };
         const codeToMode = { '0': 'normal', '1': 'easy', '2': 'random', '3': 'infinite' };
 
-        const countryNameKR = {
-            "KR": "대한민국", "KP": "북한", "JP": "일본", "CN": "중국", "MN": "몽골", "TW": "대만",
-            "VN": "베트남", "TH": "태국", "PH": "필리핀", "ID": "인도네시아", "MY": "말레이시아",
-            "IN": "인도", "PK": "파키스탄", "BD": "방글라데시", "AF": "아프가니스탄", "IR": "이란",
-            "IQ": "이라크", "SA": "사우디아라비아", "TR": "튀르키예", "UA": "우크라이나", "RU": "러시아",
-            "DE": "독일", "FR": "프랑스", "GB": "영국", "IT": "이탈리아", "ES": "스페인", "PT": "포르투갈",
-            "SE": "스웨덴", "NO": "노르웨이", "FI": "핀란드", "PL": "폴란드", "EG": "이집트", "ZA": "남아프리카공화국",
-            "NG": "나이지리아", "KE": "케냐", "US": "미국", "CA": "캐나다", "MX": "멕시코", "BR": "브라질",
-            "AR": "아르헨티나", "CL": "칠레", "CO": "콜롬비아", "PE": "페루", "AU": "호주", "NZ": "뉴질랜드"
-        };
-
-        fetch('https://raw.githubusercontent.com/djaiss/mapsicon/master/all/world/vector.svg')
-            .then(response => response.text())
+        // 🟢 내 저장소의 world.svg 로드 (404 예방)
+        fetch('world.svg')
+            .then(response => {
+                if(!response.ok) throw new Error("world.svg 로드 실패");
+                return response.text();
+            })
             .then(svgText => {
                 mapContainer.innerHTML = svgText;
                 globalSvg = mapContainer.querySelector('svg');
@@ -344,20 +304,16 @@
                 const paths = globalSvg.querySelectorAll('path, polygon');
                 
                 paths.forEach(path => {
-                    const isoCode = (path.getAttribute('id') || '').toUpperCase();
-                    const nameKR = countryNameKR[isoCode];
+                    const uniqueKey = path.getAttribute('id') || '';
+                    const displayName = path.getAttribute('data-name') || '';
 
-                    if (nameKR) {
+                    if (uniqueKey && displayName) {
                         path.classList.add('country');
-                        path.setAttribute('data-unique-key', isoCode);
-                        path.setAttribute('data-display-name', nameKR);
+                        path.setAttribute('data-unique-key', uniqueKey);
+                        path.setAttribute('data-display-name', displayName);
 
-                        if (!customRegionMap[isoCode]) customRegionMap[isoCode] = [];
-                        customRegionMap[isoCode].push(path);
-                    } else {
-                        path.style.fill = '#e2e8f0';
-                        path.style.stroke = '#cbd5e1';
-                        path.style.strokeWidth = '0.3px';
+                        if (!customRegionMap[uniqueKey]) customRegionMap[uniqueKey] = [];
+                        customRegionMap[uniqueKey].push(path);
                     }
                 });
 
@@ -383,6 +339,9 @@
                         });
                     });
                 });
+            })
+            .catch(err => {
+                mapContainer.innerHTML = `<div style="padding:20px; text-align:center; color:red;">⚠️ world.svg 파일을 찾을 수 없습니다.<br>동일 폴더에 world.svg 파일이 위치했는지 확인해 주세요.</div>`;
             });
 
         function confirmModeChange(targetMode) {
