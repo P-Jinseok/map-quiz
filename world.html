@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>세계 지도 정복 게임 🌍</title>
-    
+
     <!-- 📸 지도판을 이미지 파일(PNG)로 추출해주는 엔진 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
+
     <style>
         body {
             font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
@@ -51,7 +51,7 @@
             font-size: 1.5rem;
             text-align: center;
         }
-        
+
         #mode-selector-bar {
             display: flex;
             gap: 5px;
@@ -92,7 +92,7 @@
             align-items: center;
             position: relative;
         }
-        
+
         #save-load-bar {
             width: 100%;
             display: flex;
@@ -125,7 +125,7 @@
         }
         #score-badge { background-color: #ffe0e3; color: #ff4757; }
         #life-badge { background-color: #fff2cc; color: #d68100; }
-        
+
         #random-prompt-box {
             display: none;
             width: 100%;
@@ -147,7 +147,6 @@
             background: #a5d5e8;
         }
 
-        /* SVG 국가 조각 기본 스타일 */
         .country {
             fill: #f1f2f6 !important;
             stroke: #cbd5e1 !important;
@@ -194,7 +193,7 @@
         }
         #game-over-modal h2 { font-size: 2.2rem; color: #ff4757; margin-bottom: 5px; }
         #final-result-text { font-size: 1.2rem; font-weight: bold; margin-bottom: 25px; }
-        
+
         #quiz-choice-modal {
             display: none;
             position: absolute;
@@ -248,7 +247,7 @@
         <h1>세계 지도 정복 🌍</h1>
         <div style="width: 80px;"></div>
     </div>
-    
+
     <div id="mode-selector-bar">
         <button id="btn-mode-normal" class="mode-btn active" onclick="confirmModeChange('normal')">일반</button>
         <button id="btn-mode-easy" class="mode-btn" onclick="confirmModeChange('easy')">Easy (선다)</button>
@@ -266,7 +265,7 @@
             <div id="score-badge" class="badge">성공: <span id="score">0</span> / <span id="total-count">0</span></div>
             <div id="life-badge" class="badge">남은 기회: <span id="life-count">5</span>번</div>
         </div>
-        
+
         <div id="random-prompt-box">
             🔴 깜빡이는 국가의 이름을 하단 창에 입력하세요! 
             <button class="util-btn" onclick="startRandomTurn()" style="padding:2px 8px; margin-left:5px; background:#ff4757;">문제 패스</button>
@@ -302,13 +301,13 @@
         const randomBox = document.getElementById('random-prompt-box');
         const shareUrlBtn = document.getElementById('share-url-btn');
         const saveImgBtn = document.getElementById('save-img-btn');
-        
+
         let correctCount = 0;
         let totalRegions = 0;
         let lives = 5; 
         let globalSvg = null;
         let gameMode = 'normal'; 
-        
+
         let currentRandomTarget = null; 
         let currentEasyActiveCity = null;
         let currentChoices = [];
@@ -321,37 +320,133 @@
         const modeCodes = { 'normal': '0', 'easy': '1', 'random': '2', 'infinite': '3' };
         const codeToMode = { '0': 'normal', '1': 'easy', '2': 'random', '3': 'infinite' };
 
-        // 🌐 정밀 한국어 번역 테이블 (소문자 치환 대응)
-        const countryDictionary = {
-            "russia": "러시아", "southkorea": "대한민국", "korea": "대한민국", "republicofkorea": "대한민국",
-            "northkorea": "북한", "japan": "일본", "china": "중국", "mongolia": "몽골", "taiwan": "대만",
-            "vietnam": "베트남", "thailand": "태국", "philippines": "필리핀", "indonesia": "인도네시아",
-            "malaysia": "말레이시아", "india": "인도", "pakistan": "파키스탄", "bangladesh": "방글라데시",
-            "afghanistan": "아프가니스탄", "iran": "이란", "iraq": "이라크", "saudiarabia": "사우디아라비아",
-            "turkey": "튀르키예", "turkiye": "튀르키예", "ukraine": "우크라이나", "germany": "독일",
-            "france": "프랑스", "unitedkingdom": "영국", "greatbritain": "영국", "britain": "영국", "uk": "영국",
-            "italy": "이탈리아", "spain": "스페인", "portugal": "포르투갈", "sweden": "스웨덴",
-            "norway": "노르웨이", "finland": "핀란드", "poland": "폴란드", "egypt": "이집트",
-            "southafrica": "남아프리카공화국", "nigeria": "나이지리아", "kenya": "케냐",
-            "unitedstates": "미국", "unitedstatesofamerica": "미국", "usa": "미국", "us": "미국",
-            "canada": "캐나다", "mexico": "멕시코", "brazil": "브라질", "argentina": "아르헨티나",
-            "chile": "칠레", "colombia": "콜롬비아", "peru": "페루", "australia": "호주",
-            "newzealand": "뉴질랜드", "algeria": "알제리", "morocco": "모로코", "ethiopia": "에티오피아",
-            "madagascar": "마다가스카르", "greenland": "그린란드", "cuba": "쿠바", "angola": "앙골라"
+        // 🌐 world.svg 전수 매핑 1:1 한글 정밀 번역 및 보정 테이블
+        const exactCountryMap = {
+            // ISO 2자리 코드 기준 1:1 완전 매핑
+            "AF": "아프가니스탄", "AL": "알바니아", "DZ": "알제리", "AO": "앙골라", "AR": "아르헨티나", "AM": "아르메니아",
+            "AU": "호주", "AT": "오스트리아", "AZ": "아제르바이잔", "BS": "바하마", "BH": "바레인", "BD": "방글라데시",
+            "BB": "바베이도스", "BY": "벨라루스", "BE": "벨기에", "BZ": "벨리즈", "BJ": "베냉", "BT": "부탄",
+            "BO": "볼리비아", "BA": "보스니아 헤르체고비나", "BW": "보츠와나", "BR": "브라질", "BN": "브루나이", "BG": "불가리아",
+            "BF": "부르키나파소", "BI": "부룬디", "KH": "캄보디아", "CM": "카메룬", "CA": "캐나다", "CV": "카보베르데",
+            "CF": "중앙아프리카공화국", "TD": "차드", "CL": "칠레", "CN": "중국", "CO": "콜롬비아", "KM": "코모로",
+            "CG": "콩고공화국", "CD": "민주콩고", "CR": "코스타리카", "CI": "코트디부아르", "HR": "크로아티아", "CU": "쿠바",
+            "CY": "키프로스", "CZ": "체코", "DK": "덴마크", "DJ": "지부티", "DM": "도미니카", "DO": "도미니카공화국",
+            "EC": "에콰도르", "EG": "이집트", "SV": "엘살바도르", "GQ": "적도기니", "ER": "에리트레아", "EE": "에스토니아",
+            "ET": "에티오피아", "FJ": "피지", "FI": "핀란드", "FR": "프랑스", "GA": "가봉", "GM": "감비아",
+            "GE": "조지아", "DE": "독일", "GH": "가나", "GR": "그리스", "GD": "그레나다", "GT": "과테말라",
+            "GN": "기니", "GW": "기니비사우", "GY": "가이아나", "HT": "아이티", "HN": "혼두라스", "HU": "헝가리",
+            "IS": "아이슬란드", "IN": "인도", "ID": "인도네시아", "IR": "이란", "IQ": "이라크", "IE": "아일랜드",
+            "IL": "이스라엘", "IT": "이탈리아", "JM": "자메이카", "JP": "일본", "JO": "요르단", "KZ": "카자흐스탄",
+            "KE": "케냐", "KP": "북한", "KR": "대한민국", "KW": "쿠웨이트", "KG": "키르기스스탄", "LA": "라오스",
+            "LV": "라트비아", "LB": "레바논", "LS": "레소토", "LR": "라이베리아", "LY": "리비아", "LT": "리투아니아",
+            "LU": "룩셈부르크", "MK": "북마케도니아", "MG": "마다가스카르", "MW": "말라위", "MY": "말레이시아", "MV": "몰디브",
+            "ML": "말리", "MT": "몰타", "MR": "모리타니", "MU": "모리셔스", "MX": "멕시코", "MD": "몰도바",
+            "MN": "몽골", "ME": "몬테네그로", "MA": "모로코", "MZ": "모잠비크", "MM": "미얀마", "NA": "나미비아",
+            "NP": "네팔", "NL": "네덜란드", "NZ": "뉴질랜드", "NI": "니카라과", "NE": "니제르", "NG": "나이지리아",
+            "NO": "노르웨이", "OM": "오만", "PK": "파키스탄", "PA": "파나마", "PG": "파푸아뉴기니", "PY": "파라과이",
+            "PE": "페루", "PH": "필리핀", "PL": "폴란드", "PT": "포르투갈", "QA": "카타르", "RO": "루마니아",
+            "RU": "러시아", "RW": "르완다", "SA": "사우디아라비아", "SN": "세네갈", "RS": "세르비아", "SL": "시에라리온",
+            "SG": "싱가포르", "SK": "슬로바키아", "SI": "슬로베니아", "SB": "솔로몬 제도", "SO": "소말리아", "ZA": "남아프리카공화국",
+            "SS": "남수단", "ES": "스페인", "LK": "스리랑카", "SD": "수단", "SR": "수리남", "SZ": "에스와티니",
+            "SE": "스웨덴", "CH": "스위스", "SY": "시리아", "TW": "대만", "TJ": "타지키스탄", "TZ": "탄자니아",
+            "TH": "태국", "TL": "동티모르", "TG": "토고", "TT": "트리니다드 토바고", "TN": "튀니지", "TR": "튀르키예", "TM": "투르크메니스탄",
+            "UG": "우간다", "UA": "우크라이나", "AE": "아랍에미리트", "GB": "영국", "US": "미국", "UY": "우루과이",
+            "UZ": "우즈베키스탄", "VU": "바누아투", "VE": "베네수엘라", "VN": "베트남", "EH": "서사하라", "YE": "예멘",
+            "ZM": "잠비아", "ZW": "짐바브웨", "XK": "코소보", "PS": "팔레스타인", "AS": "아메리칸사모아", "GL": "그린란드", 
+            "BQ": "신트외스타티우스", "VC": "세인트빈센트 그레나딘", "MQ": "마르티니크", "BM": "버뮤다", 
+            "VG": "영국령 버진아일랜드", "GF": "프랑스령 기아나", "LC": "세인트루시아", "AG": "안티구아 바부다",
+            "YT": "마요트", "MF": "생마르탱", "AW": "아루바", "TV": "투발루",
+
+            // 영문/소문자/오타/하이브리드 표기 예외 보정 매핑
+            "bahamas": "바하마",
+            "american smoa": "아메리칸사모아",
+            "american samoa": "아메리칸사모아",
+            "greenland": "그린란드",
+            "papua new guinea": "파푸아뉴기니",
+            "성에우스statius": "신트외스타티우스",
+            "st. eustatius": "신트외스타티우스",
+            "st. eustatius (netherlands)": "신트외스타티우스",
+            "sint eustatius": "신트외스타티우스",
+            "sint eustatius and saba": "신트외스타티우스",
+            "saint vincent and the grenadines": "세인트빈센트 그레나딘",
+            "st. vincent and the grenadines": "세인트빈센트 그레나딘",
+            "martinique": "마르티니크",
+            "bermuda": "버뮤다",
+            "british virgin islands": "영국령 버진아일랜드",
+            "french guiana": "프랑스령 기아나",
+            "saint lucia": "세인트루시아",
+            "st. lucia": "세인트루시아",
+            "saba(netherlands)": "사바",
+            "saba (netherlands)": "사바",
+            "saba": "사바",
+
+            // ➕ 추가 보완된 지역 매핑
+            "antigua and barbuda": "안티구아 바부다",
+            "antigua & barbuda": "안티구아 바부다",
+            "mayotte": "마요트",
+            "saint-martin": "생마르탱",
+            "saint martin": "생마르탱",
+            "st. martin": "생마르탱",
+            "aruba": "아루바",
+            "tuvalu": "투발루",
+
+            // class 속성 영문명 1:1 완벽 대응
+            "Angola": "앙골라", "Argentina": "아르헨티나", "Australia": "호주", "Azerbaijan": "아제르바이잔",
+            "Canada": "캐나다", "China": "중국", "Denmark": "덴마크", "Greece": "그리스", "Indonesia": "인도네시아",
+            "Italy": "이탈리아", "Japan": "일본", "Malaysia": "말레이시아", "Norway": "노르웨이", "Oman": "오만",
+            "Philippines": "필리핀", "Russian Federation": "러시아", "Spain": "스페인", "United Kingdom": "영국",
+            "United States": "미국", "Turkey": "튀르키예", "New Zealand": "뉴질랜드", "Chile": "칠레", "France": "프랑스",
+            "Comoros": "코모로", "Cape Verde": "카보베르데", "Cayman Islands": "케이맨 제도", "Cyprus": "키프로스",
+            "Falkland Islands": "포클랜드 제도", "Faeroe Islands": "페로 제도", "Federated States of Micronesia": "미크로네시아",
+            "Saint Kitts and Nevis": "세인트키츠 네비스", "Mauritius": "모리셔스", "New Caledonia": "뉴칼레도니아",
+            "Puerto Rico": "푸에르토리코", "French Polynesia": "프랑스령 폴리네시아", "Solomon Islands": "솔로몬 제도",
+            "São Tomé and Principe": "상투메 프린시페", "Seychelles": "세이셸", "Turks and Caicos Islands": "터크스 케이커스 제도",
+            "Tonga": "통가", "Trinidad and Tobago": "트리니다드 토바고", "United States Virgin Islands": "미국령 버진아일랜드",
+            "Vanuatu": "바누아투", "Samoa": "사모아", "Canary Islands (Spain)": "카나리아 제도", "Guadeloupe": "과들루프", "Fiji": "피지",
+            "Saint Vincent and the Grenadines": "세인트빈센트 그레나딘", "Martinique": "마르티니크", "Bermuda": "버뮤다",
+            "British Virgin Islands": "영국령 버진아일랜드", "French Guiana": "프랑스령 기아나", "Saint Lucia": "세인트루시아",
+            "Antigua and Barbuda": "안티구아 바부다", "Mayotte": "마요트", "Saint Martin": "생마르탱", "Aruba": "아루바", "Tuvalu": "투발루"
         };
 
-        function translateToKorean(rawText) {
-            if (!rawText) return "미확인 지역";
-            const cleanText = rawText.replace(/[^a-zA-Z]/g, '').toLowerCase();
 
-            if (countryDictionary[cleanText]) return countryDictionary[cleanText];
+        // 🔍 SVG 국가 조각을 오차 없이 감지하는 1:1 매핑 및 데이터 정제 함수
+        function parseCountryTag(path) {
+            const rawId = (path.getAttribute('id') || '').trim();
+            const rawClass = (path.getAttribute('class') || '').trim();
+            const rawName = (path.getAttribute('name') || '').trim();
 
-            for (let key in countryDictionary) {
-                if (cleanText.includes(key) && key.length >= 3) {
-                    return countryDictionary[key];
+            const candidateKeys = [rawId, rawClass, rawName];
+
+            for (let val of candidateKeys) {
+                if (!val) continue;
+
+                // 대문자 원본 확인 (예: ISO 코드 BS, AS)
+                if (exactCountryMap[val]) {
+                    return { key: val, display: exactCountryMap[val] };
+                }
+
+                // 대문자 변환 후 확인
+                if (exactCountryMap[val.toUpperCase()]) {
+                    return { key: val.toUpperCase(), display: exactCountryMap[val.toUpperCase()] };
+                }
+
+                // 소문자 변환 후 확인 (오타, 소문자, '성에우스statius' 등 처리)
+                const lowerVal = val.toLowerCase();
+                if (exactCountryMap[lowerVal]) {
+                    return { key: lowerVal, display: exactCountryMap[lowerVal] };
                 }
             }
-            return rawText; 
+
+            // 예외: 북한("Dem. Rep. Korea" 등) / 대한민국 별도 보정
+            if (rawName.includes("Korea") || rawClass.includes("Korea")) {
+                if (rawName.includes("Dem") || rawClass.includes("North") || rawId === "KP") {
+                    return { key: "KP", display: "북한" };
+                }
+                return { key: "KR", display: "대한민국" };
+            }
+
+            const fallback = rawName || rawClass || rawId || "미확인 지역";
+            return { key: fallback, display: fallback };
         }
 
         fetch('world.svg')
@@ -362,7 +457,7 @@
             .then(svgText => {
                 mapContainer.innerHTML = svgText;
                 globalSvg = mapContainer.querySelector('svg');
-                
+
                 if (!globalSvg) {
                     mapContainer.innerHTML = `<div style="padding:20px; text-align:center; color:red;">⚠️ world.svg 내부 구조가 유효하지 않습니다.</div>`;
                     return;
@@ -370,32 +465,27 @@
 
                 globalSvg.setAttribute('width', '100%');
                 globalSvg.setAttribute('height', '100%');
-                
-                const paths = globalSvg.querySelectorAll('path, polygon');
-                
-                paths.forEach((path, index) => {
-                    const rawClass = path.getAttribute('class') || '';
-                    const rawId = path.getAttribute('id') || '';
-                    const rawName = path.getAttribute('name') || '';
-                    const rawTitle = path.getAttribute('title') || '';
-                    
-                    let englishName = rawClass.trim() || rawName.trim() || rawId.trim() || rawTitle.trim();
-                    if (!englishName) englishName = `Country_${index}`;
 
-                    const displayName = translateToKorean(englishName);
+                const paths = globalSvg.querySelectorAll('path, polygon');
+
+                paths.forEach((path) => {
+                    const info = parseCountryTag(path);
+                    const uniqueKey = info.key;
+                    const displayName = info.display;
 
                     path.classList.add('country');
-                    path.setAttribute('data-unique-key', englishName);
+                    path.setAttribute('data-unique-key', uniqueKey);
                     path.setAttribute('data-display-name', displayName);
 
-                    if (!customRegionMap[englishName]) customRegionMap[englishName] = [];
-                    customRegionMap[englishName].push(path);
+                    if (!customRegionMap[uniqueKey]) customRegionMap[uniqueKey] = [];
+                    customRegionMap[uniqueKey].push(path);
                 });
 
                 Object.keys(customRegionMap).sort().forEach(key => cityIndexList.push(key));
                 totalRegions = cityIndexList.length;
                 totalCountDisplay.textContent = totalRegions;
 
+                // 클릭 이벤트 연결
                 cityIndexList.forEach(uniqueKey => {
                     const childPaths = customRegionMap[uniqueKey];
                     const displayName = childPaths[0].getAttribute('data-display-name');
@@ -403,7 +493,7 @@
                     childPaths.forEach(path => {
                         path.addEventListener('click', function() {
                             if (this.classList.contains('correct') || (lives <= 0 && gameMode !== 'infinite')) return;
-                            
+
                             if (gameMode === 'normal' || gameMode === 'infinite') {
                                 handleNormalQuiz(uniqueKey, displayName);
                             } else if (gameMode === 'easy') {
@@ -435,7 +525,7 @@
             }
             const labels = globalSvg.querySelectorAll('.area-label');
             labels.forEach(l => l.remove());
-            
+
             cityIndexList.forEach(key => {
                 customRegionMap[key].forEach(p => {
                     p.classList.remove('correct', 'target-highlight');
@@ -491,12 +581,12 @@
         function handleEasyQuiz(uniqueKey, displayName) {
             currentEasyActiveCity = uniqueKey;
             choiceModal.style.display = 'flex';
-            
+
             if (!choiceCache[uniqueKey]) {
                 const wrongCandidates = cityIndexList
                     .map(key => customRegionMap[key][0].getAttribute('data-display-name'))
                     .filter(name => name !== displayName);
-                    
+
                 const selectedWrong = [];
                 while (selectedWrong.length < 3) {
                     const randName = wrongCandidates[Math.floor(Math.random() * wrongCandidates.length)];
@@ -517,7 +607,7 @@
             const selectedAnswer = currentChoices[selectedIndex];
             const activeKey = currentEasyActiveCity;
             const correctAnswerName = customRegionMap[activeKey][0].getAttribute('data-display-name');
-            
+
             choiceModal.style.display = 'none';
 
             if (selectedAnswer === correctAnswerName) {
